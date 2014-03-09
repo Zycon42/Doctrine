@@ -150,6 +150,12 @@ class NonLockingUniqueInserter extends Nette\Object
 			$columns[] = $this->quotes->getColumnName($column, $meta, $this->platform);
 		}
 
+		// handle discriminator column
+		$discCol = $meta->discriminatorColumn;
+		if (!empty($discCol)) {
+			$columns[] = $this->db->quote($discCol['name']);
+		}
+
 		$insertSql = 'INSERT INTO ' . $this->quotes->getTableName($meta, $this->platform)
 			. ' (' . implode(', ', $columns) . ')'
 			. ' VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')';
@@ -164,6 +170,11 @@ class NonLockingUniqueInserter extends Nette\Object
 		$paramIndex = 1;
 		foreach ($values as $field => $value) {
 			$statement->bindValue($paramIndex++, $value, $types[$field]);
+		}
+
+		// handle discriminator value
+		if (!empty($discCol)) {
+			$statement->bindValue($paramIndex++, $meta->discriminatorValue, $discCol['type']);
 		}
 
 		return $statement;
